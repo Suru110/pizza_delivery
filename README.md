@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🍕 Pizza Oven - Full Stack Pizza Delivery Application
 
 A feature-rich, high-performance pizza ordering application built using **React (Vite)**, **Node.js/Express**, **MongoDB**, **Socket.io** (WebSockets), and **Nodemailer**.
@@ -92,3 +93,6 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 3. Click the edit icon, adjust the stock below its threshold (e.g., set to `15`), and save.
 4. An automated **Low Stock Alert Email** will trigger and print its contents (or Ethereal URL) in the backend logs, alerting the admin to restock.
 5. Click **Reset All Stock to 100** to refill all ingredients instantly.
+=======
+# pizza_delivery
+>>>>>>> 6a2c9744575ccf698b69f360b5446d482252e150
