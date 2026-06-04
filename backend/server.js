@@ -26,8 +26,8 @@ const server = http.createServer(app);
 // Enable CORS
 const allowedOrigins = [
   process.env.FRONTEND_URL || 'http://localhost:5173',
-  'http://localhost:5174', // Fallback for secondary ports
-  'http://localhost:3000'
+  'http://localhost:5174', // Fallback for secondary ports (dev only)
+  'http://localhost:3000'  // Fallback for secondary ports (dev only)
 ];
 
 app.use(cors({
@@ -226,7 +226,7 @@ async function seedDatabase() {
 }
 
 // Connect to MongoDB & Start Server
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/pizza_delivery';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/pizza_delivery'; // Dev fallback only
 const PORT = process.env.PORT || 5000;
 
 console.log('Connecting to MongoDB...');

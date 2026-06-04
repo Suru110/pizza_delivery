@@ -4,7 +4,7 @@ import Pizza from './models/Pizza.js';
 
 dotenv.config();
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/pizza-delivery';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/pizza-delivery'; // Dev fallback only
 
 const pizzas = [
   // 5 VEG PIZZAS
