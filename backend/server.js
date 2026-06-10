@@ -25,33 +25,45 @@ const server = http.createServer(app);
 
 // Enable CORS
 const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:5173',
-  'http://localhost:5174', // Fallback for secondary ports (dev only)
-  'http://localhost:3000'  // Fallback for secondary ports (dev only)
-];
+  process.env.FRONTEND_URL,
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000',
+].filter(Boolean); // remove undefined/null entries
 
 app.use(cors({
   origin: (origin, callback) => {
-    // allow requests with no origin (like mobile apps or curl requests)
+    // allow requests with no origin (mobile apps, curl, Render health checks)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('http://localhost:')) {
-      return callback(null, true);
-    }
+    // allow local dev
+    if (origin.startsWith('http://localhost:')) return callback(null, true);
+    // allow the configured production frontend
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    // allow ALL Vercel preview deployments (*.vercel.app)
+    if (origin.endsWith('.vercel.app')) return callback(null, true);
     return callback(new Error('CORS Policy block'), false);
   },
   credentials: true
 }));
+
 
 app.use(express.json());
 
 // Set up Socket.io
 const io = new SocketIOServer(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (origin.startsWith('http://localhost:')) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (origin.endsWith('.vercel.app')) return callback(null, true);
+      return callback(new Error('CORS Policy block'), false);
+    },
     methods: ['GET', 'POST', 'PUT'],
     credentials: true
   }
 });
+
 
 // Share socket.io reference with Express app to trigger events from routes
 app.set('io', io);
