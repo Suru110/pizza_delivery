@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Lock, User, ShieldAlert, Key, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, User, ShieldAlert, CheckCircle, ArrowLeft } from 'lucide-react';
 
 export default function Auth({ onLoginSuccess, initialView = 'login', API_URL }) {
-  const [view, setView] = useState(initialView); // 'login', 'register', 'verify', 'forgot', 'reset'
+  const [view, setView] = useState(initialView); // 'login', 'register', 'forgot', 'reset'
   
   // Form states
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('user'); // New role state for registration
-  const [code, setCode] = useState('');
+  const [role, setRole] = useState('user');
   const [resetToken, setResetToken] = useState('');
-  const [devCode, setDevCode] = useState(''); // shown in UI when no email configured
   
   // Feedback states
   const [error, setError] = useState('');
@@ -27,16 +25,9 @@ export default function Auth({ onLoginSuccess, initialView = 'login', API_URL })
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
-    const emailParam = params.get('email');
-    
     if (token) {
       setView('reset');
       setResetToken(token);
-      // Clean query params so user doesn't get stuck on refresh
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (emailParam && params.get('verify') === 'true') {
-      setView('verify');
-      setEmail(emailParam);
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
@@ -56,13 +47,9 @@ export default function Auth({ onLoginSuccess, initialView = 'login', API_URL })
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.message || 'Registration failed');
-      
-      setSuccess(data.message);
-      if (data.devCode) {
-        setDevCode(data.devCode);
-        setCode(data.devCode); // auto-fill the code input
-      }
-      setView('verify');
+
+      // Directly log in — no verification step
+      onLoginSuccess(data.user, data.token);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -101,59 +88,7 @@ export default function Auth({ onLoginSuccess, initialView = 'login', API_URL })
     }
   };
 
-  const handleVerify = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-    setLoading(true);
 
-    try {
-      const res = await fetch(`${API_URL}/auth/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, token: code }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.message || 'Verification failed');
-
-      setSuccess('Verification successful!');
-      setTimeout(() => {
-        onLoginSuccess(data.user, data.token);
-      }, 1000);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResendCode = async () => {
-    setError('');
-    setSuccess('');
-    setLoading(true);
-
-    try {
-      const res = await fetch(`${API_URL}/auth/resend-code`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.message || 'Failed to resend code');
-
-      setSuccess('A new code has been sent to your email.');
-      if (data.devCode) {
-        setDevCode(data.devCode);
-        setCode(data.devCode);
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleForgot = async (e) => {
     e.preventDefault();
@@ -211,7 +146,7 @@ export default function Auth({ onLoginSuccess, initialView = 'login', API_URL })
       <div className="auth-card glass-card">
         {/* Card Header */}
         <div className="auth-header">
-          {view === 'forgot' || view === 'verify' || view === 'reset' ? (
+          {view === 'forgot' || view === 'reset' ? (
             <button className="back-btn" onClick={() => setView('login')} title="Back to Login">
               <ArrowLeft size={18} />
             </button>
@@ -219,14 +154,12 @@ export default function Auth({ onLoginSuccess, initialView = 'login', API_URL })
           <h2 className="serif-title">
             {view === 'login' && 'Welcome Back'}
             {view === 'register' && 'Create Account'}
-            {view === 'verify' && 'Verify Email'}
             {view === 'forgot' && 'Reset Password'}
             {view === 'reset' && 'New Password'}
           </h2>
           <p className="auth-subtitle">
             {view === 'login' && 'Log in to satisfy your pizza cravings'}
             {view === 'register' && 'Join the ultimate custom pizza experience'}
-            {view === 'verify' && `We sent a 6-digit code to ${email}`}
             {view === 'forgot' && 'Enter your email to receive a password reset link'}
             {view === 'reset' && 'Set a new password for your account'}
           </p>
@@ -390,46 +323,6 @@ export default function Auth({ onLoginSuccess, initialView = 'login', API_URL })
           </form>
         )}
 
-        {view === 'verify' && (
-          <form onSubmit={handleVerify}>
-            {devCode && (
-              <div className="dev-code-box">
-                <div className="dev-code-label">⚡ Dev Mode — Your Verification Code</div>
-                <div className="dev-code-value">{devCode}</div>
-                <div className="dev-code-hint">Code auto-filled below. Configure EMAIL_USER &amp; EMAIL_PASS in backend/.env for real emails.</div>
-              </div>
-            )}
-            <div className="form-group">
-              <label className="form-label">Verification Code</label>
-              <div className="input-with-icon">
-                <Key size={18} className="input-icon" />
-                <input
-                  type="text"
-                  className="form-control center-text letter-spacing-lg"
-                  placeholder="000000"
-                  required
-                  maxLength={6}
-                  minLength={6}
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                />
-              </div>
-            </div>
-            <button type="submit" className="btn btn-primary w-full" disabled={loading}>
-              {loading ? <div className="spinner" /> : 'Verify Code'}
-            </button>
-            <div className="flex-center mt-4">
-              <button
-                type="button"
-                className="btn btn-secondary w-full"
-                onClick={handleResendCode}
-                disabled={loading}
-              >
-                Resend Code
-              </button>
-            </div>
-          </form>
-        )}
 
         {view === 'forgot' && (
           <form onSubmit={handleForgot}>
